@@ -41,8 +41,8 @@ ATTRIBUTE_ISR void i2c_I2C_IRQHandler(void)
 {
 	int i2c_sr;
 	csi_kernel_intrpt_enter();	
-	i2c_sr = WM_I2C->CR_SR;	
-	WM_I2C->CR_SR = 1;
+	i2c_sr = I2C->CR_SR;	
+	I2C->CR_SR = 1;
 	if (i2c_sr & 0x20)
 	{
 		printf("I2C AL lost\r\n");
@@ -54,8 +54,8 @@ ATTRIBUTE_ISR void i2c_I2C_IRQHandler(void)
 			switch(i2c_transfer.state)
 			{
 				case START:
-					WM_I2C->TX_RX = i2c_transfer.addr;
-					WM_I2C->CR_SR = I2C_CR_WR;
+					I2C->TX_RX = i2c_transfer.addr;
+					I2C->CR_SR = I2C_CR_WR;
 					if ((i2c_transfer.cmd & I2C_WRITE) == I2C_WRITE)
 					{
 						i2c_transfer.state = TRANSMIT;
@@ -67,14 +67,14 @@ ATTRIBUTE_ISR void i2c_I2C_IRQHandler(void)
 					break;
 					
 				case RESTART:
-					WM_I2C->TX_RX = (i2c_transfer.dev_addr | 0x01);
-					WM_I2C->CR_SR = (I2C_CR_STA | I2C_CR_WR);
+					I2C->TX_RX = (i2c_transfer.dev_addr | 0x01);
+					I2C->CR_SR = (I2C_CR_STA | I2C_CR_WR);
 					i2c_transfer.state = PRERECEIVE;
 					break;
 				
 				case TRANSMIT:
-					WM_I2C->TX_RX = i2c_transfer.buf[i2c_transfer.cnt++];
-					WM_I2C->CR_SR = I2C_CR_WR;
+					I2C->TX_RX = i2c_transfer.buf[i2c_transfer.cnt++];
+					I2C->CR_SR = I2C_CR_WR;
 					if (i2c_transfer.cnt == i2c_transfer.len)
 					{
 						i2c_transfer.state = STOP;
@@ -83,18 +83,18 @@ ATTRIBUTE_ISR void i2c_I2C_IRQHandler(void)
 				
 				case PRERECEIVE:
 					i2c_transfer.state = RECEIVE;
-					WM_I2C->CR_SR = I2C_CR_RD;					
+					I2C->CR_SR = I2C_CR_RD;					
 					break;	
 				case RECEIVE:
-					i2c_transfer.buf[i2c_transfer.cnt++] = WM_I2C->TX_RX;					
+					i2c_transfer.buf[i2c_transfer.cnt++] = I2C->TX_RX;					
 					if (i2c_transfer.cnt == (i2c_transfer.len - 1))
 					{
-						WM_I2C->CR_SR = (I2C_CR_STO | I2C_CR_NAK | I2C_CR_RD);
+						I2C->CR_SR = (I2C_CR_STO | I2C_CR_NAK | I2C_CR_RD);
 						i2c_transfer.state = STOP;
 					}
 					else if (i2c_transfer.len == 1)
 					{
-						WM_I2C->CR_SR = (I2C_CR_STO | I2C_CR_NAK | I2C_CR_RD);
+						I2C->CR_SR = (I2C_CR_STO | I2C_CR_NAK | I2C_CR_RD);
 						i2c_transfer.state = DONE;
 						if (i2c_transfer.transfer_done)
 						{
@@ -103,12 +103,12 @@ ATTRIBUTE_ISR void i2c_I2C_IRQHandler(void)
 					}
 					else 
 					{
-						WM_I2C->CR_SR = I2C_CR_RD;
+						I2C->CR_SR = I2C_CR_RD;
 					}
 					break;
 				
 				case STOP:
-					WM_I2C->CR_SR = I2C_CR_STO;
+					I2C->CR_SR = I2C_CR_STO;
 					i2c_transfer.state = DONE;
 					if (i2c_transfer.transfer_done)
 					{
@@ -121,7 +121,7 @@ ATTRIBUTE_ISR void i2c_I2C_IRQHandler(void)
 		{
 			if ((i2c_transfer.state == STOP) && i2c_transfer.cmd != I2C_WRITE)
 			{
-				i2c_transfer.buf[i2c_transfer.cnt] = WM_I2C->TX_RX;
+				i2c_transfer.buf[i2c_transfer.cnt] = I2C->TX_RX;
 				i2c_transfer.state = DONE;
 				if (i2c_transfer.transfer_done)
 				{
@@ -261,7 +261,7 @@ int wm_i2c_start_write_it(uint8_t devaddr, uint8_t wordaddr, uint8_t * buf, uint
 	{
 		return WM_FAILED;
 	}
-	WM_I2C->TX_RX = devaddr;
+	I2C->TX_RX = devaddr;
 	i2c_transfer.dev_addr = devaddr;
 	i2c_transfer.state = START;
 	i2c_transfer.cmd = I2C_WRITE;
@@ -269,7 +269,7 @@ int wm_i2c_start_write_it(uint8_t devaddr, uint8_t wordaddr, uint8_t * buf, uint
 	i2c_transfer.len = len;
 	i2c_transfer.cnt = 0;
 	i2c_transfer.addr = wordaddr;
-	WM_I2C->CR_SR = I2C_CR_STA | I2C_CR_WR;
+	I2C->CR_SR = I2C_CR_STA | I2C_CR_WR;
 	return WM_SUCCESS;
 }
 
@@ -289,7 +289,7 @@ int wm_i2c_start_read_it(uint8_t devaddr, uint8_t wordaddr, uint8_t * buf, uint1
 	{
 		return WM_FAILED;
 	}
-	WM_I2C->TX_RX = devaddr;
+	I2C->TX_RX = devaddr;
 	i2c_transfer.dev_addr = devaddr;
 	i2c_transfer.state = START;
 	i2c_transfer.cmd = I2C_READ;
@@ -297,7 +297,7 @@ int wm_i2c_start_read_it(uint8_t devaddr, uint8_t wordaddr, uint8_t * buf, uint1
 	i2c_transfer.len = len;
 	i2c_transfer.cnt = 0;
 	i2c_transfer.addr = wordaddr;
-	WM_I2C->CR_SR = I2C_CR_STA | I2C_CR_WR;
+	I2C->CR_SR = I2C_CR_STA | I2C_CR_WR;
 	
 	return WM_SUCCESS;
 }

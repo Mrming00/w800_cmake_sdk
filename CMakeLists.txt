@@ -106,12 +106,15 @@ list(APPEND EXPORT_INC_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/src/app/fatfs
     ${CMAKE_CURRENT_LIST_DIR}/src/app/mbedtls/include
     ${CMAKE_CURRENT_LIST_DIR}/src/app/mbedtls/ports
-    ${CMAKE_CURRENT_LIST_DIR}/src/network/api2.0.3
-    ${CMAKE_CURRENT_LIST_DIR}/src/network/lwip2.0.3/include
+    ${CMAKE_CURRENT_LIST_DIR}/src/network/api_wm
+    ${CMAKE_CURRENT_LIST_DIR}/src/network/lwip2.1.3/include
     ${CMAKE_CURRENT_LIST_DIR}/src/os/rtos/include
     ${CMAKE_CURRENT_LIST_DIR}/src/app/factorycmd)
+    # ${CMAKE_CURRENT_LIST_DIR}/src/network/api2.0.3
+    # ${CMAKE_CURRENT_LIST_DIR}/src/network/lwip2.0.3/include
 
-list(APPEND EXPORT_GCC_FLGS
+
+    list(APPEND EXPORT_GCC_FLGS
     "-std=gnu99"
     "-Wall")
 

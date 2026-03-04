@@ -32,9 +32,9 @@
 #ifndef __FSDATA_H__
 #define __FSDATA_H__
 
-//#ifndef NULL
-//#define NULL ((void *)0)
-//#endif
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 
 struct fsdata_file {
   const struct fsdata_file *next;

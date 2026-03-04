@@ -42,7 +42,7 @@ typedef struct
 	__IO uint32_t SEG_EN;
 } LCD_T;
 /** LCD base pointer */
-#define WM_LCD 		((LCD_T *)HR_LCD_REG_BASE)
+#define LCD 		((LCD_T *)HR_LCD_REG_BASE)
 
 typedef enum
 {

@@ -3,10 +3,10 @@ sinclude $(TOP_DIR)/tools/w800/conf.mk
 
 EXCLUDES =
 
-CSRCS = 
+CSRCS = $(filter-out $(EXCLUDES), $(wildcard *.c))
 
 ifndef PDIR
-#GEN_LIBS = libwm_atcmd$(LIB_EXT)
+GEN_LIBS = libwm_atcmd$(LIB_EXT)
 endif
 
 #DEFINES +=

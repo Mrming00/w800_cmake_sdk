@@ -12,10 +12,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "wm_config.h"
 #include "wm_osal.h"
-#include "elog.h"
 
 /* 0x00000000 - 0x80000000 */
 /** Define the debugging switch: on */
@@ -38,9 +36,29 @@
 /** general debug info switch, default: off */
 #define TLS_GENERAL_DBG             TLS_DBG_OFF
 
-#define __TLS_DBGPRT_INFO(fmt, ...)       log_i(fmt, ##__VA_ARGS__)
-#define __TLS_DBGPRT_WARNING(fmt, ...)    log_w(fmt, ##__VA_ARGS__)
-#define __TLS_DBGPRT_ERR(fmt, ...)        log_e(fmt, ##__VA_ARGS__)
+#if TLS_DBG_SIMPLE
+#define __TLS_DBGPRT_INFO(fmt, ...)       printf(fmt, ##__VA_ARGS__)
+#define __TLS_DBGPRT_WARNING(fmt, ...)    printf(fmt, ##__VA_ARGS__)
+#define __TLS_DBGPRT_ERR(fmt, ...)        printf(fmt, ##__VA_ARGS__)
+#else
+#define __TLS_DBGPRT_INFO(fmt, ...)				     \
+do {									                     \
+       u32 time = tls_os_get_time();	                 \
+       printf("[WM_I] <%d.%02d> %s : "fmt, (time/100), (time%100), __func__ , ##__VA_ARGS__); \
+} while (0)
+
+#define __TLS_DBGPRT_WARNING(fmt, ...)				     \
+do {									                     \
+       u32 time = tls_os_get_time();	                 \
+       printf("[WM_W] <%d.%02d> %s : "fmt, (time/100), (time%100), __func__ , ##__VA_ARGS__); \
+} while (0)
+
+#define __TLS_DBGPRT_ERR(fmt, ...)				     \
+do {									                     \
+       u32 time = tls_os_get_time();	                 \
+       printf("[WM_E] <%d.%02d> %s : "fmt, (time/100), (time%100), __func__ , ##__VA_ARGS__); \
+} while (0)
+#endif
 
 /**
  * @defgroup System_APIs System APIs

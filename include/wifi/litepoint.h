@@ -89,4 +89,5 @@ void tls_rx_litepoint_pwr_result(u32 *valid, u32 *snr, u32 *rcpi);
 void tls_tx_litepoint_period(u32 period);
 u32  tls_get_tx_litepoint_period(void);
 void tls_set_tx_litepoint_period(u32 period);
+void tls_lp_notify_lp_tx_data(void);
 #endif

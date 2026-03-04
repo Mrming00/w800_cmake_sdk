@@ -93,17 +93,6 @@ typedef enum tls_os_status {
  */
 
 /**
- * @brief    	   get current task handle;
- *
- * @param[in]      None
- *
- * @return         None
- *
- * @note           None
- */
-tls_os_task_t tls_os_task_id();
-
-/**
  * @brief          This function is used to register OS tick timer irq
  *
  * @param[in]      None
@@ -242,6 +231,12 @@ tls_os_status_t tls_os_task_del(u8 prio, void (*freefun)(void));
  *
  */
 tls_os_status_t tls_os_task_del_by_task_handle(void *handle, void (*freefun)(void));
+
+tls_os_task_t tls_os_task_id();
+
+u8 tls_os_task_schedule_state();
+
+
 
 /**
  * @brief          This function creates a mutual exclusion semaphore
@@ -424,6 +419,8 @@ tls_os_status_t tls_os_sem_delete(tls_os_sem_t *sem);
  */
  tls_os_status_t tls_os_sem_set(tls_os_sem_t *sem, u16 cnt);
 
+ u16 tls_os_sem_get_count(tls_os_sem_t *sem);
+
 
 /**
  * @brief          This function creates a message queue if free event cont
@@ -471,6 +468,42 @@ tls_os_status_t tls_os_sem_delete(tls_os_sem_t *sem);
         void *msg,
         u32 msg_size);
 
+        
+/**
+ * @brief          This function sends a message to a head of the queue
+ *
+ * @param[in]      *queue     pointer to the event control block
+                              associated with the desired queue
+ * @param[in]      *msg       pointer to the message to send.
+ * @param[in]      msg_size   message size
+ *
+ * @retval         0     success
+ * @retval         other failed
+ *
+ * @note           None
+ */
+ tls_os_status_t tls_os_queue_send_to_front(tls_os_queue_t *queue,
+        void *msg,
+        u32 msg_size);
+
+        
+/**
+ * @brief          This function sends a message to a tail of the queue
+ *
+ * @param[in]      *queue     pointer to the event control block
+                              associated with the desired queue
+ * @param[in]      *msg       pointer to the message to send.
+ * @param[in]      msg_size   message size
+ *
+ * @retval         0     success
+ * @retval         other failed
+ *
+ * @note           None
+ */
+ tls_os_status_t tls_os_queue_send_to_back(tls_os_queue_t *queue,
+        void *msg,
+        u32 msg_size);
+
 /**
  * @brief          This function is used to flush the contents of the message
                    queue.
@@ -507,6 +540,23 @@ tls_os_status_t tls_os_queue_flush(tls_os_queue_t *queue);
  tls_os_status_t tls_os_queue_receive(tls_os_queue_t *queue,void **msg,
         u32 msg_size,
         u32 wait_time);
+
+ u8 tls_os_queue_is_empty(tls_os_queue_t *queue);
+
+/**
+ * @brief Return the number of free spaces available in a queue.  This is equal to the
+ * number of items that can be sent to the queue before the queue becomes full
+ * if no items are removed.
+ *
+ * @param *queue       pointer to the event control block associated
+ 								with the desired queue
+ * @return The number of spaces available in the queue.
+ * @note           None
+ */
+ u32 tls_os_queue_space_available(tls_os_queue_t *queue);
+ 
+ tls_os_status_t tls_os_queue_remove(tls_os_queue_t *queue, void* msg, u32 msg_size);
+
 
 /**
  * @brief          This function creates a message mailbox if free event
@@ -589,16 +639,6 @@ tls_os_status_t tls_os_queue_flush(tls_os_queue_t *queue);
  * @note           None
  */
  u32 tls_os_get_time(void);
-
-/**
- * @brief get current time with 'ms' unit
-*/
- u32 tls_os_get_time_ms(void);
-
-/**
- * @brief get current time with 'sec' unit
-*/
- u32 tls_os_get_time_sec(void);
 
 /**
  * @brief          This function is used to disable interrupts by preserving
@@ -707,7 +747,7 @@ tls_os_status_t tls_os_queue_flush(tls_os_queue_t *queue);
  *
  * @note           None
  */
-tls_os_status_t tls_os_timer_delete(tls_os_timer_t *timer);
+ tls_os_status_t tls_os_timer_delete(tls_os_timer_t *timer);
 
 /**
  * @brief          This function is called to delay execution of the currently
@@ -728,20 +768,11 @@ tls_os_status_t tls_os_timer_delete(tls_os_timer_t *timer);
  */
  void tls_os_time_delay(u32 ticks);
 
-/**
- * @brief Delay with 'ms' unit
-*/
- void tls_os_time_delay_ms(u32 ms);
+ u8 tls_os_timer_active(tls_os_timer_t *timer);
 
-/**
- * @brief Get the tick count of the system from 'ms'
-*/
- #define tls_os_ms_2_tick(ms) (((ms) * HZ) / 1000u)
+ u32 tls_os_timer_expirytime(tls_os_timer_t *timer);
 
-/**
- * @brief Get the tick count of the system from 'seconds'
-*/
- #define tls_os_sec_2_tick(sec) ((sec) * HZ)
+
 
 /**
  * @brief          This function is used to display all the tasks' detail status.
@@ -753,6 +784,9 @@ tls_os_status_t tls_os_timer_delete(tls_os_timer_t *timer);
  * @note           None
  */
 void tls_os_disp_task_stat_info(void);
+
+u8 tls_get_isr_count(void);
+
 
 /**
  * @}

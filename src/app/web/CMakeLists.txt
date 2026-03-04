@@ -11,7 +11,9 @@ list(REMOVE_ITEM C_SRCS
     "fsdata_lwip.c"
     "fsdata_lwip_basic.c"
     "fsdata_lwip_ruigong.c"
-    "fsdata_lwip_russian.c")
+    "fsdata_lwip_russian.c"
+    "fsdata_ap_config.c"
+    "fsdata.c")
 
 add_library(${MODULE_NAME} STATIC
     ${C_SRCS}

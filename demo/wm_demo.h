@@ -2,7 +2,7 @@
 #define __WM_DEMO_H__
 
 #define DEMO_ON		1
-#define DEMO_OFF	1
+#define DEMO_OFF	0
 
 //demo console
 #define DEMO_CONSOLE				DEMO_OFF
@@ -78,6 +78,10 @@
 //touch sensor
 #define DEMO_TOUCHSENSOR           (DEMO_OFF && DEMO_CONSOLE)
 
+//LCD
+#define DEMO_LCD                    (DEMO_OFF && DEMO_CONSOLE)
+
+
 //ssl server demo
 #define DEMO_SSL_SERVER				(DEMO_OFF && DEMO_CONSOLE)
 
@@ -98,6 +102,8 @@
 #define DEMO_DSP					(DEMO_OFF && DEMO_CONSOLE)
 
 #define DEMO_BT                     (DEMO_OFF && DEMO_CONSOLE)
+
+#define DEMO_AVOID_COPY             (DEMO_OFF && DEMO_CONSOLE)
 
 ////////////////////////////////////////////////////////////////
 

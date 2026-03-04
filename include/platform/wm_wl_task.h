@@ -30,7 +30,6 @@
 #define TLS_UPNP_TASK_PRIO                  (TASK_WL_PRIO_MAX + 11)
 #define TLS_ONESHOT_TASK_PRIO          		  (TASK_WL_PRIO_MAX + 15)
 #define TLS_ONESHOT_SPEC_TASK_PRIO			    (TASK_WL_PRIO_MAX + 16)
-#define TLS_USER_MAIN_TASK_PRIO			        (TASK_WL_PRIO_MAX + 17)
 
 
 #define TLS_MBOX_ALL_COUNT                  8

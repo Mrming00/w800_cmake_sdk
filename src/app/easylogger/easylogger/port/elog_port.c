@@ -93,7 +93,7 @@ void elog_port_output_unlock(void)
 const char *elog_port_get_time(void)
 {
     static char buf[256];
-    sprintf(buf, "%8u", tls_os_get_time_ms());
+    sprintf(buf, "%8u", tls_os_get_time());
     return buf;
 }
 

@@ -20,6 +20,7 @@ static void wm_i2s_set_mode(bool bl)
 }
 
 //master or slave
+#if 0
 static uint32_t wm_i2s_get_mode(void)
 {
 	uint32_t reg;
@@ -29,6 +30,7 @@ static uint32_t wm_i2s_get_mode(void)
 	
 	return (reg & 0x1);
 }
+#endif
 
 //i2s_stardard
 static void wm_i2s_set_format(uint32_t format)
@@ -213,7 +215,7 @@ static void wm_i2s_set_freq(uint32_t lr_freq, uint32_t mclk)
 	uint32_t temp;
 	uint8_t wdwidth, stereo;
     
-	temp = WM_I2S->CTRL;
+	temp = I2S->CTRL;
 	wdwidth = (((temp>>4)&0x03)+1)<<3;
 	stereo = tls_bitband_read(HR_I2S_CTRL, 22) ? 1:2;
 	stereo = 2;
@@ -243,7 +245,7 @@ static void wm_i2s_set_freq_exclk(uint32_t freq, uint32_t exclk)
 	uint32_t temp;
 	uint8_t wdwidth, stereo;
 	
-	temp = WM_I2S->CTRL;
+	temp = I2S->CTRL;
 	wdwidth = (((temp>>4)&0x03)+1)<<3;
 	stereo = tls_bitband_read(HR_I2S_CTRL, 22) ? 1:2;	
 	div = (exclk * 2 + freq * wdwidth * stereo)/(2* freq * wdwidth * stereo) - 1;
@@ -322,7 +324,7 @@ ATTRIBUTE_ISR void i2s_I2S_IRQHandler(void)
 	{	
 		if (wm_i2s_buf->txtail < wm_i2s_buf->txlen)
 		{
-			for(fifo_level = ((WM_I2S->INT_STATUS >> 4)& 0x0F),temp = 0; temp < 8-fifo_level; temp++)
+			for(fifo_level = ((I2S->INT_STATUS >> 4)& 0x0F),temp = 0; temp < 8-fifo_level; temp++)
 			{
 				tls_reg_write32(HR_I2S_TX, wm_i2s_buf->txbuf[wm_i2s_buf->txtail++]);
 				if (wm_i2s_buf->txtail >= wm_i2s_buf->txlen)
@@ -370,11 +372,11 @@ ATTRIBUTE_ISR void i2s_I2S_IRQHandler(void)
 	/* RxTH */
 	if (tls_bitband_read(HR_I2S_INT_SRC, 2) )
 	{		
-		for(cnt = (WM_I2S->INT_STATUS & 0x0F),temp = 0; temp < cnt; temp++)
+		for(cnt = (I2S->INT_STATUS & 0x0F),temp = 0; temp < cnt; temp++)
 		{
 			if (wm_i2s_buf->rxhead < wm_i2s_buf->rxlen)
 			{
-				wm_i2s_buf->rxbuf[wm_i2s_buf->rxhead++] = WM_I2S->RX;
+				wm_i2s_buf->rxbuf[wm_i2s_buf->rxhead++] = I2S->RX;
 				if (wm_i2s_buf->rxhead >= wm_i2s_buf->rxlen)
 				{
 					wm_i2s_buf->rxhead = 0;
@@ -549,7 +551,7 @@ int wm_i2s_tx_int(int16_t *data, uint16_t len, int16_t *next_data)
 	tls_irq_enable(I2S_IRQn);
 	wm_i2s_tx_enable(1);
 
-	for(fifo_level = ((WM_I2S->INT_STATUS >> 4)& 0x0F),temp = 0; temp < 8-fifo_level; temp++)
+	for(fifo_level = ((I2S->INT_STATUS >> 4)& 0x0F),temp = 0; temp < 8-fifo_level; temp++)
 	{
 		tls_reg_write32(HR_I2S_TX, wm_i2s_buf->txbuf[wm_i2s_buf->txtail++]);
 	}

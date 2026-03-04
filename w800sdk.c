@@ -8,10 +8,24 @@
 
 #include "w800sdk_conf.h"
 #include "wm_include.h"
+#include "wm_flash.h"
+#include "wm_internal_flash.h"
+#include "wm_flash_map.h"
+#include "wm_fwup.h"
+#include "wm_crypto.h"
+#include "wm_crypto_hard.h"
 
 #include "mbedtls/base64.h"
 #include "mbedtls/rsa.h"
 #include "mbedtls/pk.h"
+
+/* Signature info structure definition */
+struct w800_img_signature_info_t {
+    uint32_t sign_addr;
+    uint8_t sign_data[128];
+    uint8_t image_sha1[20];
+    bool verify_passed;
+};
 
 #define W800_SDK_VER_MAIN     0
 #define W800_SDK_VER_SUB      1
@@ -20,6 +34,8 @@
 #define _2STR(x) #x
 #define CONV_STR(x) _2STR(x)
 
+
+#if 1
 // --- internal datas
 
 #if CONFIG_W800_IMAGE_SIGN
@@ -177,4 +193,5 @@ int w800sdk_get_img_signature(struct w800_img_signature_info_t *info)
     static const uint8_t _flash_dummy[_FLASH_DUMMY_SIZE]
         __attribute__((used))
         __attribute__((section(".img_dummy")));
+#endif
 #endif

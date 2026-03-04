@@ -29,7 +29,7 @@ typedef struct
 	__I  uint32_t TXR;	
 	__I  uint32_t CR;
 }I2C_T;
-#define WM_I2C		((I2C_T *)(HR_I2C_BASE_ADDR))
+#define I2C		((I2C_T *)(HR_I2C_BASE_ADDR))
 
 /**
  * @defgroup Driver_APIs Driver APIs

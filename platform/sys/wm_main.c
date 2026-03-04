@@ -44,12 +44,14 @@
 #include "wm_pmu.h"
 #include "wm_ram_config.h"
 #include "wm_uart.h"
-
+#include "wm_watchdog.h"
+#include "wm_wifi.h"
 #if TLS_CONFIG_ONLY_FACTORY_ATCMD
 #include "factory_atcmd.h"
 #endif
 
 #include "w800sdk_conf.h"
+#include "elog.h"
 
 /* c librayr mutex */
 tls_os_sem_t    *libc_sem;
@@ -89,16 +91,16 @@ void _mutex_release (u32 *mutex)
 
 #endif
 
-#define     TASK_START_STK_SIZE         640     /* Size of each task's stacks (# of WORDs)  */
+#define     TASK_START_STK_SIZE         768     /* Size of each task's stacks (# of WORDs)  */
 /*If you want to delete main task after it works, you can open this MACRO below*/
-#define MAIN_TASK_DELETE_AFTER_START_FTR  0
+#define MAIN_TASK_DELETE_AFTER_START_FTR  1
 
 u8 *TaskStartStk = NULL;
 tls_os_task_t tststarthdl = NULL;
 
 #define FW_MAJOR_VER           0x1
 #define FW_MINOR_VER           0x0
-#define FW_PATCH_VER           0x4
+#define FW_PATCH_VER           0x10
 
 const char FirmWareVer[4] =
 {
@@ -121,9 +123,13 @@ extern u8 tx_gain_group[];
 extern void *tls_wl_init(u8 *tx_gain, u8 *mac_addr, u8 *hwver);
 extern int wpa_supplicant_init(u8 *mac_addr);
 extern void tls_sys_auto_mode_run(void);
-extern void UserMain(void *task_handle_ptr);
+extern void UserMain(void);
 extern void tls_bt_entry();
-
+#if (TLS_CONFIG_HOSTIF&&TLS_CONFIG_UART)
+extern int tls_uart_get_at_cmd_port(void);
+extern void tls_uart_set_at_cmd_port(int at_cmd_port);
+#endif
+void tls_mem_get_init_available_size(void);
 void task_start (void *data);
 
 /****************/
@@ -200,6 +206,13 @@ void task_start_free()
 int main(void)
 {
     u32 value = 0;
+
+	/*standby reason setting in here,because pmu irq will clear it.*/
+	if ((tls_reg_read32(HR_PMU_INTERRUPT_SRC)>>7)&0x1)
+	{
+		tls_sys_set_reboot_reason(REBOOT_REASON_STANDBY);
+	}
+	
     /*32K switch to use RC circuit & calibration*/
     tls_pmu_clk_select(0);
 #if (TLS_CONFIG_HOSTIF&&TLS_CONFIG_UART)
@@ -214,10 +227,10 @@ int main(void)
     value &= ~(BIT(5));
     tls_reg_write32(HR_PMU_PS_CR, value);
 	
-    /*Close those not initialized clk except uart0,sdadc,gpio,rfcfg*/
+    /*Close those not initialized clk except touchsensor/trng, uart0,sdadc,gpio,rfcfg*/
     value = tls_reg_read32(HR_CLK_BASE_ADDR);
     value &= ~0x3fffff;
-    value |= 0x1a02;
+    value |= 0x201a02;
     tls_reg_write32(HR_CLK_BASE_ADDR, value);
 
 
@@ -257,6 +270,9 @@ int main(void)
     csi_vic_set_wakeup_irq(PMU_IRQn);
     csi_vic_set_wakeup_irq(TIMER_IRQn);
     csi_vic_set_wakeup_irq(WDG_IRQn);
+	/*should be here because main stack will be allocated and deallocated after task delete*/
+	tls_mem_get_init_available_size();
+	
     /*configure wake up source end*/
 	TaskStartStk = tls_mem_alloc(sizeof(u32)*TASK_START_STK_SIZE);
 	if (TaskStartStk)
@@ -318,7 +334,7 @@ void tls_mem_get_init_available_size(void)
 	}
 }
 
-void tls_pmu_chipsleep_callback(uint32_t sleeptime)
+void tls_pmu_chipsleep_callback(int sleeptime)
 {
 	//wm_printf("c:%d\r\n", sleeptime);
 	/*set wakeup time*/
@@ -341,21 +357,10 @@ void task_start (void *data)
 	u8 enable = 0;
     u8 mac_addr[6] = {0x00, 0x25, 0x08, 0x09, 0x01, 0x0F};
 
-    // logger init
-    elog_init();
-    elog_set_fmt(ELOG_LVL_ASSERT, ELOG_FMT_ALL);
-    elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
-    elog_set_fmt(ELOG_LVL_WARN, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
-    elog_set_fmt(ELOG_LVL_INFO, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
-    elog_set_fmt(ELOG_LVL_DEBUG, ELOG_FMT_ALL & ~(ELOG_FMT_FUNC | ELOG_FMT_T_INFO | ELOG_FMT_P_INFO));
-    elog_set_fmt(ELOG_LVL_VERBOSE, ELOG_FMT_ALL & ~(ELOG_FMT_FUNC | ELOG_FMT_T_INFO | ELOG_FMT_P_INFO));
-    elog_start();
-
 #if TLS_CONFIG_CRYSTAL_24M
     tls_wl_hw_using_24m_crystal();
 #endif
 
-	tls_mem_get_init_available_size();
     /* must call first to configure gpio Alternate functions according the hardware design */
     wm_gpio_config();
 
@@ -381,11 +386,7 @@ void task_start (void *data)
     tls_get_tx_gain(&tx_gain_group[0]);
     TLS_DBGPRT_INFO("tx gain ");
     TLS_DBGPRT_DUMP((char *)(&tx_gain_group[0]), 27);
-    // 假设tx是7, rx是3
-    // (7+3)*2*1638+4096 = 36k
-    // (6+4)*2*1638+4096 = 36k
-    // (7+7)*2*1638+4096 = 49k
-    if (tls_wifi_mem_cfg(WIFI_MEM_START_ADDR, 7, 7)) /*wifi tx&rx mem customized interface*/
+    if (tls_wifi_mem_cfg(WIFI_MEM_START_ADDR, 7, 3)) /*wifi tx&rx mem customized interface*/
     {
         TLS_DBGPRT_INFO("wl mem initial failured\n");
     }
@@ -404,7 +405,7 @@ void task_start (void *data)
 	/*wifi-temperature compensation,default:open*/
 	tls_wifi_set_tempcomp_flag(0);
 	tls_wifi_set_psm_chipsleep_flag(0);
-	tls_wifi_psm_chipsleep_cb_register(tls_pmu_chipsleep_callback, NULL, NULL);
+	tls_wifi_psm_chipsleep_cb_register((tls_wifi_psm_chipsleep_callback)tls_pmu_chipsleep_callback, NULL, NULL);
     tls_ethernet_init();
 
 #if TLS_CONFIG_BT
@@ -412,6 +413,19 @@ void task_start (void *data)
 #endif
 
     tls_sys_init();
+
+    /* initialize EasyLogger */
+    elog_init();
+    /* set EasyLogger log format */
+    elog_set_fmt(ELOG_LVL_ASSERT, ELOG_FMT_ALL);
+    elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
+    elog_set_fmt(ELOG_LVL_WARN, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
+    elog_set_fmt(ELOG_LVL_INFO, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
+    elog_set_fmt(ELOG_LVL_DEBUG, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
+    elog_set_fmt(ELOG_LVL_VERBOSE, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
+    /* start EasyLogger */
+    elog_start();
+
 #if TLS_CONFIG_ONLY_FACTORY_ATCMD
 	factory_atcmd_init();
 #else
@@ -426,11 +440,6 @@ void task_start (void *data)
 #if TLS_CONFIG_UART
     tls_uart_init();
 #endif
-
-#if TLS_CONFIG_HTTP_CLIENT_TASK
-    http_client_task_init();
-#endif
-
 #endif
 
 	tls_param_get(TLS_PARAM_ID_PSM, &enable, TRUE);	
@@ -440,31 +449,7 @@ void task_start (void *data)
 	    tls_param_set(TLS_PARAM_ID_PSM, &enable, TRUE);	  
 	}
 
-    // init uart0
-    tls_uart_options_t uart_cfg = {
-        .baudrate   = 115200,
-        .charlength = TLS_UART_CHSIZE_8BIT,
-        .flow_ctrl  = TLS_UART_FLOW_CTRL_NONE,
-        .paritytype = TLS_PARAM_UART_PARITY_NONE,
-        .stopbits   = TLS_PARAM_UART_STOPBITS_1BITS,
-    };
-    tls_uart_port_init(TLS_UART_0, &uart_cfg, 0);
-
-    //
-    extern size_t xPortGetMemRemainSize(void);
-    log_i("RTOS heap remain size: %d KB", xPortGetMemRemainSize() / 1024);
-    log_i("libc heap remain size: %d KB", total_mem_size / 1024);
-
-    // main task
-    static uint8_t usr_main_stk[CONFIG_USER_MAIN_TASK_STACK_SIZE];
-    static tls_os_task_t usr_main_h;
-    tls_os_task_create(&usr_main_h, "main",
-                       UserMain,
-                       (void *)&usr_main_h,
-                       (void *)usr_main_stk,             /* 任务栈的起始地址 */
-                       CONFIG_USER_MAIN_TASK_STACK_SIZE, /* 任务栈的大小     */
-                       TLS_USER_MAIN_TASK_PRIO,
-                       0);
+    UserMain();
 
     tls_sys_auto_mode_run();
 #endif
@@ -478,15 +463,10 @@ void task_start (void *data)
 		}
         tls_os_time_delay(0x10000000);
 #else
-#if 1
-		tls_os_time_delay(0x10000000);
-#else
         //printf("start up\n");
         extern void tls_os_disp_task_stat_info(void);
         tls_os_disp_task_stat_info();
         tls_os_time_delay(1000);
-#endif		
 #endif
     }
 }
-

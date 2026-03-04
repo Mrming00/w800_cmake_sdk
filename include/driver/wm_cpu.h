@@ -11,7 +11,7 @@
 #define WM_CPU_H
 
 #include <stdint.h>
-
+#include "wm_type_def.h"
 /**W800 BASE PLL CLOCK*/
 #define W800_PLL_CLK_MHZ  		(480)
 

@@ -50,7 +50,7 @@ typedef struct _dma_handler_type
 	void    (* XferHalfCpltCallback)( struct _dma_handler_type * hdma);     /*!< DMA Half transfer complete callback    */
 }wm_dma_handler_type;
 
-#define WM_I2S			            ((I2S_T *)HR_I2S_REG_BASE)
+#define I2S			            ((I2S_T *)HR_I2S_REG_BASE)
 
 #define I2S_MODE_MASTER		    ((bool)0x0)
 #define I2S_MODE_SLAVE		    ((bool)0x1)

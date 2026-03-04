@@ -27,14 +27,14 @@ typedef struct {
 	__IOM uint32_t  DATA_BUF[128];                    /*!< Offset: 0x100 */
 }SDIO_HOST_Type;
 
-#define WM_SDIO_HOST     ((SDIO_HOST_Type *)HR_SDIO_HOST_BASE_ADDR)
+#define SDIO_HOST     ((SDIO_HOST_Type *)HR_SDIO_HOST_BASE_ADDR)
 
 typedef struct
 {
   long long CardCapacity;
   u32 CardBlockSize;
   u16 RCA;
-  u8 CardType;
+  u8 CSDVer;
 } SD_CardInfo_t;
 extern SD_CardInfo_t SDCardInfo;
 /**

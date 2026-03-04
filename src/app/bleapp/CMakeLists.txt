@@ -7,6 +7,9 @@ set(ASM_SRCS)
 file(GLOB_RECURSE C_SRCS LIST_DIRECTORIES false RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
     "*.c")
 
+# Exclude wm_bt_storage.c as it's already defined in blehost
+list(FILTER C_SRCS EXCLUDE REGEX ".*wm_bt_storage\\.c")
+
 add_library(${MODULE_NAME} STATIC
     ${C_SRCS}
     ${ASM_SRCS})
